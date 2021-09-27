@@ -1,0 +1,26 @@
+{
+  "name": "kpi-backend",
+  "version": "1.0.0",
+  "description": "kpi backend",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^0.21",
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "http": "^0.0.1-security",
+    "lodash": "^4.17.19",
+    "moment": "^2.29.1",
+    "mysql2": "^2.2.5",
+    "popper.js": "^1.12",
+    "postcss": "^8.1.14",
+    "resolve-url-loader": "^2.3.1",
+    "socket.io": "^4.1.3",
+    "sprintf-js": "^1.1.2",
+    "ws": "^7.5.2"
+  }
+}
