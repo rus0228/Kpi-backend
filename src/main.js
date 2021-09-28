@@ -240,15 +240,52 @@ const getMostSpentClientsData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	const sql = `select id, name, total_spent from tbl_client ` +
-		` where last_action_date <= '${endTime}' and client_since >= '${startTime}' ` +
-		` order by total_spent desc limit 5`;
+	let sql = ''
+	if (store === '0'){
+		sql = `select tc.id as id, tc.name as name, tc.total_spent as total_spent from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
+			` where tc.last_action_date <= '${endTime}' and tc.client_since >= '${startTime}' ` +
+			` order by total_spent desc limit 5`;
+	}else {
+		sql = `select tc.id as id, tc.name as name, tc.total_spent as total_spent from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
+			` where tc.last_action_date <= '${endTime}' and tc.client_since >= '${startTime}' and tco.store_id = ${store} ` +
+			` order by total_spent desc limit 5`;
+	}
 
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
 		console.log(result);
+		res && res.send(result);
+	})
+}
+
+const getRepeatedCustomerRate = (req, res) => {
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	const store = req.query.store;
+	let sql = ''
+	if (store === '0'){
+		sql = `select count(T.client_id) as value from (SELECT client_id, count(client_id) as counted FROM tbl_sales where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
+			` union` +
+			` SELECT client_id, count(client_id) as counted FROM tbl_repair where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
+			` union` +
+			` select client_id, count(client_id) as counted FROM tbl_returns where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
+			` order by client_id) T where T.counted = 1;` +
+			` select count(id) as value from tbl_client`;
+	}else {
+		sql = `select count(T.client_id) as value from (SELECT client_id, count(client_id) as counted FROM tbl_sales where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
+			` union` +
+			` SELECT client_id, count(client_id) as counted FROM tbl_repair where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
+			` union` +
+			` select client_id, count(client_id) as counted FROM tbl_returns where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
+			` order by client_id) T where T.counted = 1;` +
+			` select count(id) as value from tbl_client`;
+	}
+	dbConn.query(sql, null, (error, result) => {
+		if (error){
+			throw error;
+		}
 		res && res.send(result);
 	})
 }
@@ -329,10 +366,17 @@ const getCustomSellPhoneData = (req, res) => {
  * Category: SOS
  ******************************************/
 const getSosData = (req, res) => {
+	const store = req.query.store;
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = `select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}';` +
-		`select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;`;
+	let sql = '';
+	if (store === '0'){
+		sql = `select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}';` +
+			`select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;`;
+	}else {
+		sql = `select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = '${store}';` +
+			`select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5 and store_id = '${store}';`;
+	}
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
@@ -342,8 +386,12 @@ const getSosData = (req, res) => {
 	})
 }
 const getSosCustomData = (req, res) => {
-	const sql = 'select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time from tbl_sos where status = 5;' +
-		'select sum(total_euro) as total_revenue from tbl_repair tr inner join tbl_sos ts on tr.sos_id = ts.id;'
+	const store = req.query.store;
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	const sql =
+		`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time from tbl_sos where status = 5 and created_date > '${startTime}' and created_date < '${endTime}';` +
+		`select sum(total_euro) as total_revenue from tbl_repair tr inner join tbl_sos ts on tr.sos_id = ts.id where ts.created_date > '${startTime}' and ts.created_date < '${endTime}';`
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
@@ -361,12 +409,14 @@ const getSosCustomData = (req, res) => {
  * Category: Customer Satisfy
  ******************************************/
 const getCustomerEvaluation = (req, res) => {
-	const sql = 'select count(id) as count, star_rating from tbl_contacts group by star_rating;'
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	const store = req.query.store;
+	const sql = `select count(id) as count, star_rating from tbl_contacts where created_date > '${startTime}' and created_date < '${endTime}' group by star_rating;`
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
 		}
-		console.log(result);
 		res.send(result);
 	})
 }
@@ -375,13 +425,23 @@ const getCustomerEvaluation = (req, res) => {
  * Category: Repairs
  ******************************************/
 const getNumberOfRepairs = (req, res) => {
+	const store = req.query.store;
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = `select count(id) as count, status from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' group by status;` +
-		`select count(id) as completed from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;` +
-		`select count(id) as cancelled from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 6;` +
-		`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time_repair from tbl_repair where status = 5;` +
-		`select sum(total_euro) / count(id) as average_value_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}';`;
+	let sql = '';
+	if (store === '0'){
+		sql = `select count(id) as count, status from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' group by status;` +
+			`select count(id) as completed from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;` +
+			`select count(id) as cancelled from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 6;` +
+			`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;` +
+			`select sum(total_euro) / count(id) as average_value_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}';`;
+	}else {
+		sql = `select count(id) as count, status from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} group by status;` +
+			`select count(id) as completed from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 5;` +
+			`select count(id) as cancelled from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 6;` +
+			`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 5;` +
+			`select sum(total_euro) / count(id) as average_value_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store};`;
+	}
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -391,9 +451,19 @@ const getNumberOfRepairs = (req, res) => {
 	})
 }
 const getRepairType = (req, res) => {
-	const sql = 'select count(id) as type from tbl_repair where type = 1;' +
-		'select count(id) as type from tbl_repair where type = 2;' +
-		'select count(id) as type from tbl_repair where type = 3;';
+	const store = req.query.store;
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	let sql = '';
+	if (store === '0'){
+		sql = `select count(id) as type from tbl_repair where type = 1 and created_date > '${startTime}' and created_date < '${endTime}';` +
+			`select count(id) as type from tbl_repair where type = 2 and created_date > '${startTime}' and created_date < '${endTime}';` +
+			`select count(id) as type from tbl_repair where type = 3 and created_date > '${startTime}' and created_date < '${endTime}';`;
+	}else {
+		sql = `select count(id) as type from tbl_repair where type = 1 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};` +
+			`select count(id) as type from tbl_repair where type = 2 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};` +
+			`select count(id) as type from tbl_repair where type = 3 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};`;
+	}
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -403,6 +473,28 @@ const getRepairType = (req, res) => {
 	})
 }
 
+const getMostInteractionData = (req, res) => {
+	const store = req.query.store;
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	let sql = '';
+	if (store === '0'){
+		sql = `select user_id, count(user_id) as count from tbl_status_history ` +
+			`where page = 'repairs' and type = 'updateStatus' and created_date > '${startTime}' and created_date < '${endTime}' ` +
+			`group by user_id order by count desc;`
+	}else {
+		sql = `select user_id, count(user_id) as count from tbl_status_history ` +
+			`where page = 'repairs' and type = 'updateStatus' and created_date > '${startTime}' and created_date < '${endTime}' and store_id = '${store}'` +
+			`group by user_id order by count desc;`
+	}
+	dbConn.query(sql, null, (error, result) => {
+		if (error){
+			throw error;
+		}
+		console.log(result);
+		res.send(result);
+	})
+}
 
 module.exports = {
 	getRevenueProfitQty,
@@ -413,10 +505,12 @@ module.exports = {
 	getBestSellingProductsData,
 	getNumberOfNewClients,
 	getMostSpentClientsData,
+	getRepeatedCustomerRate,
 	getTotalAndLostRmaData,
 	getTotalLossesData,
 	getNumberOfRepairs,
 	getRepairType,
+	getMostInteractionData,
 	getCustomerEvaluation,
 	getSosData,
 	getSosCustomData,

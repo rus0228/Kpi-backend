@@ -10,12 +10,15 @@ const {
 
 	getNumberOfNewClients,
 	getMostSpentClientsData,
+	getRepeatedCustomerRate,
 
 	getTotalAndLostRmaData,
 	getTotalLossesData,
 
 	getNumberOfRepairs,
 	getRepairType,
+	getMostInteractionData,
+
 	getCustomerEvaluation,
 
 	getSosData,
@@ -27,7 +30,6 @@ const {
 	getMostFrequentSuppliers,
 	getMostPurchasedSuppliers,
 	getPurchaseData,
-	getOrderCostIva
 } = require('./src/main');
 const SocketIO = require('socket.io');
 const http = require('http');
@@ -47,12 +49,14 @@ app.get('/api/getBestSellingProductsData', getBestSellingProductsData);
 
 app.get('/api/getNumberOfNewClients', getNumberOfNewClients);
 app.get('/api/getMostSpentClientsData', getMostSpentClientsData);
+app.get('/api/getRepeatedCustomerRate', getRepeatedCustomerRate);
 
 app.get('/api/getTotalAndLostRmaData', getTotalAndLostRmaData);
 app.get('/api/getTotalLossesData', getTotalLossesData);
 
 app.get('/api/getNumberOfRepairs', getNumberOfRepairs);
 app.get('/api/getRepairType', getRepairType);
+app.get('/api/getMostInteractionData', getMostInteractionData);
 
 app.get('/api/getCustomerEvaluation', getCustomerEvaluation);
 
