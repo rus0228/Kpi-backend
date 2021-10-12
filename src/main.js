@@ -1,53 +1,96 @@
-const axios = require('axios');
 const {sprintf} = require('sprintf-js');
 const dbConn = require('../config/database');
-const moment = require('moment')
-const lodash = require('lodash')
+const moment = require('moment');
 const {
-	getSqlForRevenueProfitQty,
-	getSqlForPurchasedOrdersData,
-	getSqlForTotalCostIva,
-	getSqlForTotalValue,
-	getSqlForTotalAndLostRmaData
+	getSqlForSalesRevenueProfitQty,
+	getSqlForRepairsRevenueProfitQty,
+	getSqlForReturnsRevenueProfitQty,
+	getSqlForPurchaseOrdersRevenueQty,
+	getSqlForTotalData,
+
+	getSqlForNumberOfNewProducts,
+	getSqlForBestSellingProductsData,
+
+	getSqlForPurchaseData,
+	getSqlForMostFrequentSuppliers,
+	getSqlForMostPurchasedSuppliers,
+
+	getSqlForNumberOfNewClients,
+	getSqlForMostSpentClientsData,
+	getSqlForRepeatedCustomerRate,
+
+	getSqlForSellPhoneData,
+	getSqlForSosData,
+
+	getSqlForRepairData,
+	getSqlForRepairType,
+	getSqlForMostInteractionData
 } = require('./utils')
+
+
+const getPreDuration = (startTime, endTime) => {
+	const currentStart = moment(startTime);
+	const currentEnd = moment(endTime);
+	const currentDuration = currentEnd.diff(currentStart, 'days') + 1;
+	const tempPreStart = currentStart.subtract(currentDuration, 'days');
+	const preStart = tempPreStart.format('YYYY-MM-DD HH:mm:ss');
+	return {
+		startTime: preStart,
+		endTime: startTime
+	}
+}
 
 /******************************************
  * Category: Revenue / Profit / quantity
  ******************************************/
-const getRevenueProfitQty = (req, res) => {
+const getSalesRevenueProfitQty = (req, res) => {
 	const startTime = req.query['startTime'];
 	const endTime = req.query['endTime'];
 	const store = req.query['store'];
-	const productTypes = JSON.parse(req.query['productTypes'])
-	const mStart = moment(startTime);
-	const mEnd = moment(endTime);
-	const duration = moment.duration(mEnd.diff(mStart)).asDays();
-	const sql = getSqlForRevenueProfitQty(startTime, endTime, productTypes, duration, store);
-	let buffer = []
+	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
+	const sql = getSqlForSalesRevenueProfitQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		for(let k = 0; k < result.length; k++){
-			if (result[k].length > 0){
-				for (let l = 0; l < result[k].length; l++){
-					buffer.push(result[k][l])
-				}
-			}else {
-				buffer.push(result[k])
-			}
-		}
-		res && res.send(lodash.groupBy(buffer, 'time'));
+		console.log(result);
+		res && res.send(result);
 	})
 };
-const getPurchasedOrdersData = (req, res) => {
+const getRepairsRevenueProfitQty = (req, res) => {
 	const startTime = req.query['startTime'];
 	const endTime = req.query['endTime'];
 	const store = req.query['store'];
-	const mStart = moment(startTime);
-	const mEnd = moment(endTime);
-	const duration = moment.duration(mEnd.diff(mStart)).asDays();
-	const sql = getSqlForPurchasedOrdersData(startTime, endTime, store, duration);
+	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
+	const sql = getSqlForRepairsRevenueProfitQty(startTime, endTime, store, duration);
+	dbConn.query(sql, null, (error, result) => {
+		if (error){
+			throw error;
+		}
+		console.log(result);
+		res && res.send(result);
+	})
+};
+const getReturnsRevenueProfitQty = (req, res) => {
+	const startTime = req.query['startTime'];
+	const endTime = req.query['endTime'];
+	const store = req.query['store'];
+	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
+	const sql = getSqlForReturnsRevenueProfitQty(startTime, endTime, store, duration);
+	dbConn.query(sql, null, (error, result) => {
+		if (error){
+			throw error;
+		}
+		console.log(result);
+		res && res.send(result);
+	})
+};
+const getPurchaseOrdersRevenueQty = (req, res) => {
+	const startTime = req.query.startTime;
+	const endTime = req.query.endTime;
+	const store = req.query.store;
+	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
+	const sql = getSqlForPurchaseOrdersRevenueQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -56,44 +99,30 @@ const getPurchasedOrdersData = (req, res) => {
 		res && res.send(result);
 	})
 }
-const getTotalCostIva = (req, res) => {
-	const startTime = req.query['startTime'];
-	const endTime = req.query['endTime'];
-	const store = req.query['store'];
-	const sql = getSqlForTotalCostIva(startTime, endTime, store);
-	dbConn.query(sql, null, (error, result) => {
-		if (error){
-			throw error;
-		}
-		console.log(result);
-		res && res.send(result[0]);
-	})
-}
-const getTotalValue = (req, res) => {
-	const store = req.query.store;
+const getTotalData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = getSqlForTotalValue(startTime, endTime, store);
+	const store = req.query.store;
+
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+
+	const sql = getSqlForTotalData(startTime, endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		const totalRevenueWithIva = parseFloat(result[0]['sales_iva']) - parseFloat(result[0]['returns_iva']) + parseFloat(result[0]['repairs_iva']);
-		const totalRevenueWithoutIva = parseFloat(result[0]['sales']) - parseFloat(result[0]['returns']) + parseFloat(result[0]['repairs']);
-		const totalRevenue = totalRevenueWithIva + totalRevenueWithoutIva;
-		const totalProfitWithIva = parseFloat(result[0]['sales_profit_iva']) - parseFloat(result[0]['returns_profit_iva']) + parseFloat(result[0]['repairs_profit_iva']);
-		const totalProfitWithoutIva = parseFloat(result[0]['sales_profit']) - parseFloat(result[0]['returns_profit']) + parseFloat(result[0]['repairs_profit']);
-		const totalProfit = totalProfitWithIva + totalProfitWithoutIva;
-		const sendData  = {
-			'totalRevenueWithIva': totalRevenueWithIva,
-			'totalRevenueWithoutIva': totalRevenueWithoutIva,
-			'totalRevenue': totalRevenue,
-			'totalProfitWithIva': totalProfitWithIva,
-			'totalProfitWithoutIva': totalProfitWithoutIva,
-			'totalProfit': totalProfit
-		}
-		console.log(sendData);
-		res && res.send(sendData);
+		const preSql = getSqlForTotalData(preStartTime, preEndTime, store);
+		dbConn.query(preSql, null, (_error, _result) => {
+			if (_error){
+				throw _error;
+			}
+			res && res.send({
+				current: result[0],
+				before: _result[0]
+			});
+		})
 	})
 }
 
@@ -104,56 +133,36 @@ const getNumberOfNewProducts = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = '';
-	if (store === '0'){
-		sql = `select count(tp.id) as count from tbl_products tp inner join tbl_product_to_shop tpts on tp.id = tpts.product_id ` +
-			`where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}'`;
-	}else {
-		sql = `select count(tp.id) as count from tbl_products tp inner join tbl_product_to_shop tpts on tp.id = tpts.product_id ` +
-			`where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}' and tpts.store_id = '${store}'`;
-	}
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForNumberOfNewProducts(startTime, endTime, preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		res && res.send(result[0]);
+		res && res.send({
+			current: result[0][0],
+			prev: result[1][0]
+		});
 	})
 }
 const getBestSellingProductsData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = '';
-	if (store === '0'){
-		sql =
-			`select tsp.product_id as pId, sum(tsp.quantity) as pQty, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' group by pId order by pQty desc limit 5;` +
 
-			`select tsp.product_id as pId, sum(tsp.subtotal) as pRevenue, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' group by pId order by pRevenue desc limit 5;` +
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
 
-			`select tsp.product_id as pId, sum(tsp.subtotal - tsp.cost_price * tsp.quantity) as pProfit, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' group by pId order by pProfit desc limit 5;`
-	}else {
-		sql =
-			`select tsp.product_id as pId, sum(tsp.quantity) as pQty, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' and ts.store_id = '${store}' group by pId order by pQty desc limit 5;` +
-
-			`select tsp.product_id as pId, sum(tsp.subtotal) as pRevenue, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' and ts.store_id = '${store}' group by pId order by pRevenue desc limit 5;` +
-
-			`select tsp.product_id as pId, sum(tsp.subtotal - tsp.cost_price * tsp.quantity) as pProfit, tsp.product as pName from tbl_sales_product tsp inner join tbl_sales ts on tsp.sale_id = ts.id` +
-			` where tsp.created_date >= '${startTime}' and tsp.created_date <= '${endTime}' and ts.store_id = '${store}' group by pId order by pProfit desc limit 5;`
-	}
-
+	const sql = getSqlForBestSellingProductsData(startTime, endTime, preStartTime, preEndTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		console.log(result);
 		res && res.send(result);
 	})
-
 }
 
 /******************************************
@@ -162,10 +171,11 @@ const getBestSellingProductsData = (req, res) => {
 const getMostFrequentSuppliers = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = 'select sum(quantity) as quantity, ts.name as name ' +
-		'from tbl_purchase tp inner join tbl_supplier ts on tp.supplier_id = ts.id ' +
-		`where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}' ` +
-		'group by tp.supplier_id order by quantity desc limit 5;'
+	const store = req.query.store;
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForMostFrequentSuppliers(startTime, endTime, preStartTime, preEndTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -177,15 +187,15 @@ const getMostFrequentSuppliers = (req, res) => {
 const getMostPurchasedSuppliers = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = 'select sum(total) as value, ts.name as name ' +
-		'from tbl_purchase tp inner join tbl_supplier ts on tp.supplier_id = ts.id ' +
-		`where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}' ` +
-		'group by tp.supplier_id order by value desc limit 5;';
+	const store = req.query.store;
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForMostPurchasedSuppliers(startTime, endTime, preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		console.log(result)
 		res.send(result)
 	})
 }
@@ -193,18 +203,7 @@ const getPurchaseData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = '';
-	if (store === '0'){
-		sql = `select concat(year(tp.created_date), '-', month(tp.created_date)) as month, sum(tp.quantity) as quantity, sum(tp.total) as value` +
-			` from tbl_purchase tp inner join purchase_group pg on tp.purchase_group_id = pg.id` +
-			` where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}'` +
-			` group by year(tp.created_date), month(tp.created_date) order by tp.created_date asc`;
-	}else {
-		sql = `select concat(year(tp.created_date), '-', month(tp.created_date)) as month, sum(tp.quantity) as quantity, sum(tp.total) as value` +
-			` from tbl_purchase tp inner join purchase_group pg on tp.purchase_group_id = pg.id` +
-			` where tp.created_date >= '${startTime}' and tp.created_date <= '${endTime}' and pg.store_id = '${store}'` +
-			` group by year(tp.created_date), month(tp.created_date) order by tp.created_date asc`;
-	}
+	const sql = getSqlForPurchaseData(startTime, endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -220,37 +219,28 @@ const getNumberOfNewClients = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = '';
-	if (store === '0'){
-		sql = `select count(tc.id) as count from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
-			`where tc.created_date >= '${startTime}' and tc.created_date <= '${endTime}'`;
-	}else {
-		sql = `select count(tc.id) as count from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
-			`where tc.created_date >= '${startTime}' and tc.created_date <= '${endTime}' and tco.store_id = '${store}'`;
-	}
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForNumberOfNewClients(startTime, endTime, preStartTime, preEndTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		console.log(result);
-		res && res.send(result[0]);
+		res && res.send({
+			current: result[0][0],
+			prev: result[1][0]
+		});
 	})
 }
 const getMostSpentClientsData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = ''
-	if (store === '0'){
-		sql = `select tc.id as id, tc.name as name, tc.total_spent as total_spent from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
-			` where tc.last_action_date <= '${endTime}' and tc.client_since >= '${startTime}' ` +
-			` order by total_spent desc limit 5`;
-	}else {
-		sql = `select tc.id as id, tc.name as name, tc.total_spent as total_spent from tbl_client tc inner join tbl_client_orders tco on tc.id = tco.client_id ` +
-			` where tc.last_action_date <= '${endTime}' and tc.client_since >= '${startTime}' and tco.store_id = ${store} ` +
-			` order by total_spent desc limit 5`;
-	}
-
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForMostSpentClientsData(startTime, endTime, preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -264,68 +254,179 @@ const getRepeatedCustomerRate = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	let sql = ''
-	if (store === '0'){
-		sql = `select count(T.client_id) as value from (SELECT client_id, count(client_id) as counted FROM tbl_sales where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
-			` union` +
-			` SELECT client_id, count(client_id) as counted FROM tbl_repair where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
-			` union` +
-			` select client_id, count(client_id) as counted FROM tbl_returns where created_date > '${startTime}' and created_date < '${endTime}' group by client_id` +
-			` order by client_id) T where T.counted = 1;` +
-			` select count(id) as value from tbl_client`;
-	}else {
-		sql = `select count(T.client_id) as value from (SELECT client_id, count(client_id) as counted FROM tbl_sales where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
-			` union` +
-			` SELECT client_id, count(client_id) as counted FROM tbl_repair where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
-			` union` +
-			` select client_id, count(client_id) as counted FROM tbl_returns where created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store} group by client_id` +
-			` order by client_id) T where T.counted = 1;` +
-			` select count(id) as value from tbl_client`;
-	}
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForRepeatedCustomerRate(startTime, endTime, store);
+	const _sql = getSqlForRepeatedCustomerRate(preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		res && res.send(result);
+		dbConn.query(_sql, null, (_error, _result) => {
+			if (_error){
+				throw _error;
+			}
+			res && res.send({
+				current: {
+					notRepeated: result[0][0]['notRepeated'],
+					repeated: result[1][0]['repeated']
+				},
+				prev: {
+					notRepeated: _result[0][0]['notRepeated'],
+					repeated: _result[1][0]['repeated']
+				}
+			});
+		})
 	})
 }
 
 /******************************************
  * Category: Inventory losses
  ******************************************/
-const getTotalAndLostRmaData = (req, res) => {
+function getTotalRma(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(total) AS totalRma ` +
+			`FROM tbl_rma_group ` +
+			`WHERE created_date >= '${startTime}' ` +
+				`AND created_date <= '${endTime}' ` +
+				`${storeWhere}`
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error);
+			}
+			resolve(parseFloat(result[0]['totalRma']));
+		})
+	})
+}
+function getLostRma(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(total - refund_value) AS lostRma ` +
+			`FROM tbl_rma_group ` +
+			`WHERE created_date >= '${startTime}' ` +
+				`AND created_date <= '${endTime}' ` +
+				`${storeWhere}`
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error)
+			}
+			resolve(parseFloat(result[0]['lostRma']))
+		})
+	})
+}
+function getTotalLossesWithRma(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND tsg.store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(tp.last_purchase_price) AS totalLossesWithRma ` +
+			`FROM tbl_products tp ` +
+			`INNER JOIN tbl_shrinkage ts ON tp.id = ts.product_id ` +
+			`INNER JOIN tbl_shrinkage_group tsg ON ts.shrinkage_group_id = tsg.id ` +
+			`WHERE tp.deleted = '0' ` +
+				`AND tp.modified_date >= '${startTime}' ` +
+				`AND tp.modified_date <= '${endTime}' ` +
+				`${storeWhere}` +
+				`AND ts.rma != '0' `;
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error)
+			}
+			resolve(parseFloat(result[0]['totalLossesWithRma']));
+		})
+	})
+}
+function getTotalLossesWithoutRma(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND tsg.store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(tp.last_purchase_price) AS totalLossesWithoutRma ` +
+			`FROM tbl_products tp ` +
+			`INNER JOIN tbl_shrinkage ts ON tp.id = ts.product_id ` +
+			`INNER JOIN tbl_shrinkage_group tsg ON ts.shrinkage_group_id = tsg.id ` +
+			`WHERE tp.deleted = '0' ` +
+				`AND tp.modified_date >= '${startTime}' ` +
+				`AND tp.modified_date <= '${endTime}' ` +
+				`${storeWhere}` +
+				`AND ts.rma = 0 `;
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error);
+			}
+			resolve(parseFloat(result[0]['totalLossesWithoutRma']));
+		})
+	})
+}
+
+const getInventoryLossesData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
 	const store = req.query.store;
-	const sql = getSqlForTotalAndLostRmaData(startTime, endTime, store)
-	dbConn.query(sql, null, (error, result) => {
-		if (error){
-			throw error;
-		}
-		console.log(result);
-		res && res.send(result);
-	})
-}
-const getTotalLossesData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const sql = `select ` +
-		`(select sum(tp.last_purchase_price) ` +
-		`from tbl_products tp inner join tbl_shrinkage ts on ts.product_id = tp.id ` +
-		`where ts.rma > 0 and ts.created_date > '${startTime}' and ts.created_date < '${endTime}') as withRma,` +
-		`(select sum(tp.last_purchase_price) ` +
-		`from tbl_products tp inner join tbl_shrinkage ts on ts.product_id = tp.id ` +
-		`where ts.rma = 0 and ts.created_date > '${startTime}' and ts.created_date < '${endTime}') as withoutRma;`
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
 
-	dbConn.query(sql, null, (error, result) => {
-		if (error){
-			throw error;
-		}
+	const kind = req.query.kind
+	/***
+	 * We will send kind parameter for kind, which means inventory sub tab value
+	 ***/
 
-		res && res.send(result);
-	})
+	if (kind === 'totalRma'){
+		getTotalRma(startTime, endTime, store).then((response) => {
+			getTotalRma(preStartTime, preEndTime, store).then((_response) => {
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
+	if (kind === 'lostRma'){
+		getLostRma(startTime, endTime, store).then((response) => {
+			getLostRma(preStartTime, preEndTime, store).then((_response) => {
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
+	if (kind === 'totalLossesWithRma'){
+		getTotalLossesWithRma(startTime, endTime, store).then((response) => {
+			getTotalLossesWithRma(preStartTime, preEndTime, store).then((_response) => {
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
+	if (kind === 'totalLossesWithoutRma'){
+		getTotalLossesWithoutRma(startTime, endTime, store).then((response) => {
+			getTotalLossesWithoutRma(preStartTime, preEndTime, store).then((_response) => {
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
+
+	if (kind === 'totalLosses'){
+		getLostRma(startTime, endTime, store).then((lostRma) => {
+			getLostRma(preStartTime, preEndTime, store).then((_lostRma) => {
+				getTotalLossesWithoutRma(startTime, endTime, store).then((withOut) => {
+					getTotalLossesWithoutRma(preStartTime, preEndTime, store).then((_withOut) => {
+						res && res.send({
+							current: parseFloat(lostRma) + parseFloat(withOut),
+							prev: parseFloat(_lostRma) + parseFloat(_withOut)
+						})
+					});
+				});
+			});
+		});
+	}
 }
+
 
 /******************************************
  * Category: Sell my phone
@@ -333,32 +434,25 @@ const getTotalLossesData = (req, res) => {
 const getSellPhoneData = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const sql = `select count(id) as number from tbl_sellmyphone_sold where created_date >= '${startTime}' and created_date <= '${endTime}';` +
-		`select count(id) as number from tbl_sellmyphone_sold where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 7;`;
+	const store = req.query.store;
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForSellPhoneData(startTime, endTime);
+	const preSql = getSqlForSellPhoneData(preStartTime, preEndTime)
 	dbConn.query(sql, null, (error, result) => {
-		if (error) {
+		if (error){
 			throw error;
 		}
-		console.log(result);
-		res.send(result);
-	})
-}
-const getCustomSellPhoneData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const sql = `select sum(admin_price) as total_amount from tbl_sellmyphone_sold where modified_date > '${startTime}' and modified_date < '${endTime}';` +
-		`select sum(admin_price) / count(id) as average_amount from tbl_sellmyphone_sold where modified_date > '${startTime}' and modified_date < '${endTime}';` +
-		`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time from tbl_sellmyphone_sold where status = 7 and  modified_date > '${startTime}' and modified_date < '${endTime}';`
-	dbConn.query(sql, null, (error, result) => {
-		if (error) {
-			throw error;
-		}
-		const dataSend = {
-			total_amount: result[0][0]['total_amount'],
-			average_amount: result[1][0]['average_amount'],
-			average_time: result[2][0]['average_time']
-		}
-		res.send(dataSend);
+		dbConn.query(preSql, null, (preError, preResult) => {
+			if (preError){
+				throw preError;
+			}
+			res && res.send({
+				current: result[0],
+				prev: preResult[0]
+			});
+		})
 	})
 }
 
@@ -366,42 +460,27 @@ const getCustomSellPhoneData = (req, res) => {
  * Category: SOS
  ******************************************/
 const getSosData = (req, res) => {
-	const store = req.query.store;
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	let sql = '';
-	if (store === '0'){
-		sql = `select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}';` +
-			`select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;`;
-	}else {
-		sql = `select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = '${store}';` +
-			`select count(id) as number from tbl_sos where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5 and store_id = '${store}';`;
-	}
+	const store = req.query.store;
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForSosData(startTime, endTime, store);
+	const preSql = getSqlForSosData(preStartTime, preEndTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
 		}
-		console.log(result);
-		res.send(result);
-	})
-}
-const getSosCustomData = (req, res) => {
-	const store = req.query.store;
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const sql =
-		`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time from tbl_sos where status = 5 and created_date > '${startTime}' and created_date < '${endTime}';` +
-		`select sum(total_euro) as total_revenue from tbl_repair tr inner join tbl_sos ts on tr.sos_id = ts.id where ts.created_date > '${startTime}' and ts.created_date < '${endTime}';`
-	dbConn.query(sql, null, (error, result) => {
-		if (error) {
-			throw error;
-		}
-		console.log(result);
-		const sendData = {
-			average_time: result[0][0]['average_time'],
-			total_revenue: result[1][0]['total_revenue']
-		}
-		res.send(sendData);
+		dbConn.query(preSql, null, (preError, preResult) => {
+			if (preError) {
+				throw preError;
+			}
+			res && res.send({
+				current: result[0],
+				prev: preResult[0]
+			})
+		})
 	})
 }
 
@@ -411,65 +490,92 @@ const getSosCustomData = (req, res) => {
 const getCustomerEvaluation = (req, res) => {
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const sql = `select count(id) as count, star_rating from tbl_contacts where created_date > '${startTime}' and created_date < '${endTime}' group by star_rating;`
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = `SELECT current.count AS current, prev.count AS prev, current.rating ` +
+		`FROM (` +
+			`SELECT COUNT(id) AS count, star_rating AS rating ` +
+			`FROM tbl_contacts ` +
+			`WHERE created_date > '${startTime}' ` +
+				`AND created_date < '${endTime}' ` +
+				`AND star_rating != 'null' ` +
+			`GROUP BY star_rating` +
+		`) current ` +
+		`LEFT JOIN (` +
+			`SELECT COUNT(id) AS count, star_rating AS rating ` +
+			`FROM tbl_contacts ` +
+			`WHERE created_date > '${preStartTime}' ` +
+				`AND created_date < '${preEndTime}' ` +
+				`AND star_rating != 'null' ` +
+			`GROUP BY star_rating` +
+		`) prev ON current.rating = prev.rating;`
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
 		}
-		res.send(result);
+		res && res.send(result);
 	})
 }
 
 /******************************************
  * Category: Repairs
  ******************************************/
-const getNumberOfRepairs = (req, res) => {
+const getRepairData = (req, res) => {
 	const store = req.query.store;
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	let sql = '';
-	if (store === '0'){
-		sql = `select count(id) as count, status from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' group by status;` +
-			`select count(id) as completed from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;` +
-			`select count(id) as cancelled from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 6;` +
-			`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and status = 5;` +
-			`select sum(total_euro) / count(id) as average_value_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}';`;
-	}else {
-		sql = `select count(id) as count, status from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} group by status;` +
-			`select count(id) as completed from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 5;` +
-			`select count(id) as cancelled from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 6;` +
-			`select sum(unix_timestamp(modified_date) - unix_timestamp(created_date)) / count(id) as average_time_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store} and status = 5;` +
-			`select sum(total_euro) / count(id) as average_value_repair from tbl_repair where created_date >= '${startTime}' and created_date <= '${endTime}' and store_id = ${store};`;
-	}
+
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+
+	const sql = getSqlForRepairData(startTime, endTime, store);
+	const preSql = getSqlForRepairData(preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		console.log(result);
-		res && res.send(result);
+		dbConn.query(preSql, null, (preError, preResult) => {
+			if (preError){
+				throw preError;
+			}
+			res && res.send({
+				current: result[0],
+				prev: preResult[0]
+			})
+		})
 	})
 }
+
 const getRepairType = (req, res) => {
 	const store = req.query.store;
 	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	let sql = '';
-	if (store === '0'){
-		sql = `select count(id) as type from tbl_repair where type = 1 and created_date > '${startTime}' and created_date < '${endTime}';` +
-			`select count(id) as type from tbl_repair where type = 2 and created_date > '${startTime}' and created_date < '${endTime}';` +
-			`select count(id) as type from tbl_repair where type = 3 and created_date > '${startTime}' and created_date < '${endTime}';`;
-	}else {
-		sql = `select count(id) as type from tbl_repair where type = 1 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};` +
-			`select count(id) as type from tbl_repair where type = 2 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};` +
-			`select count(id) as type from tbl_repair where type = 3 and created_date > '${startTime}' and created_date < '${endTime}' and store_id = ${store};`;
-	}
+	const endTime= req.query.endTime;
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+
+	const sql =  getSqlForRepairType(startTime, endTime, store);
+	const preSql = getSqlForRepairType(preStartTime, preEndTime, store);
+
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		console.log(result);
-		res.send(result);
+		dbConn.query(preSql, null, (preError, preResult) => {
+			if (preError){
+				throw preError;
+			}
+			res && res.send({
+				repair: result[0]['repair'],
+				warranty: result[0]['warranty'],
+				sos: result[0]['sos'],
+				_repair: preResult[0]['repair'],
+				_warranty: preResult[0]['warranty'],
+				_sos: preResult[0]['sos'],
+			})
+		})
 	})
 }
 
@@ -477,16 +583,10 @@ const getMostInteractionData = (req, res) => {
 	const store = req.query.store;
 	const startTime = req.query.startTime;
 	const endTime = req.query.endTime;
-	let sql = '';
-	if (store === '0'){
-		sql = `select user_id, count(user_id) as count from tbl_status_history ` +
-			`where page = 'repairs' and type = 'updateStatus' and created_date > '${startTime}' and created_date < '${endTime}' ` +
-			`group by user_id order by count desc;`
-	}else {
-		sql = `select user_id, count(user_id) as count from tbl_status_history ` +
-			`where page = 'repairs' and type = 'updateStatus' and created_date > '${startTime}' and created_date < '${endTime}' and store_id = '${store}'` +
-			`group by user_id order by count desc;`
-	}
+	const preDuration = getPreDuration(startTime, endTime);
+	const preStartTime = preDuration.startTime;
+	const preEndTime = preDuration.endTime;
+	const sql = getSqlForMostInteractionData(startTime, endTime, preStartTime, preEndTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -497,25 +597,28 @@ const getMostInteractionData = (req, res) => {
 }
 
 module.exports = {
-	getRevenueProfitQty,
-	getPurchasedOrdersData,
-	getTotalCostIva,
-	getTotalValue,
+	getSalesRevenueProfitQty,
+	getRepairsRevenueProfitQty,
+	getReturnsRevenueProfitQty,
+	getPurchaseOrdersRevenueQty,
+	getTotalData,
+
 	getNumberOfNewProducts,
 	getBestSellingProductsData,
 	getNumberOfNewClients,
 	getMostSpentClientsData,
 	getRepeatedCustomerRate,
-	getTotalAndLostRmaData,
-	getTotalLossesData,
-	getNumberOfRepairs,
+
+	getInventoryLossesData,
+
+	getSellPhoneData,
+	getSosData,
+
+	getRepairData,
 	getRepairType,
 	getMostInteractionData,
 	getCustomerEvaluation,
-	getSosData,
-	getSosCustomData,
-	getSellPhoneData,
-	getCustomSellPhoneData,
+
 	getMostFrequentSuppliers,
 	getMostPurchasedSuppliers,
 	getPurchaseData
