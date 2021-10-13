@@ -27,16 +27,21 @@ const {
 	getSqlForMostInteractionData
 } = require('./utils')
 
-
-const getPreDuration = (startTime, endTime) => {
-	const currentStart = moment(startTime);
-	const currentEnd = moment(endTime);
-	const currentDuration = currentEnd.diff(currentStart, 'days') + 1;
-	const tempPreStart = currentStart.subtract(currentDuration, 'days');
-	const preStart = tempPreStart.format('YYYY-MM-DD HH:mm:ss');
+/******************************************
+ * Get common parameters
+ ******************************************/
+const getCommonParams = (e) => {
+	const startTime = e.query['startTime'];
+	const endTime = e.query['endTime'];
+	const _startTime = e.query['_startTime'];
+	const _endTime = e.query['_endTime'];
+	const store = e.query['store'];
 	return {
-		startTime: preStart,
-		endTime: startTime
+		startTime: startTime,
+		endTime: endTime,
+		_startTime: _startTime,
+		_endTime: _endTime,
+		store: store
 	}
 }
 
@@ -44,9 +49,8 @@ const getPreDuration = (startTime, endTime) => {
  * Category: Revenue / Profit / quantity
  ******************************************/
 const getSalesRevenueProfitQty = (req, res) => {
-	const startTime = req.query['startTime'];
-	const endTime = req.query['endTime'];
-	const store = req.query['store'];
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
 	const sql = getSqlForSalesRevenueProfitQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
@@ -58,9 +62,8 @@ const getSalesRevenueProfitQty = (req, res) => {
 	})
 };
 const getRepairsRevenueProfitQty = (req, res) => {
-	const startTime = req.query['startTime'];
-	const endTime = req.query['endTime'];
-	const store = req.query['store'];
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
 	const sql = getSqlForRepairsRevenueProfitQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
@@ -72,9 +75,8 @@ const getRepairsRevenueProfitQty = (req, res) => {
 	})
 };
 const getReturnsRevenueProfitQty = (req, res) => {
-	const startTime = req.query['startTime'];
-	const endTime = req.query['endTime'];
-	const store = req.query['store'];
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
 	const sql = getSqlForReturnsRevenueProfitQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
@@ -86,9 +88,8 @@ const getReturnsRevenueProfitQty = (req, res) => {
 	})
 };
 const getPurchaseOrdersRevenueQty = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const duration = moment.duration(moment(endTime).diff(moment(startTime))).asDays();
 	const sql = getSqlForPurchaseOrdersRevenueQty(startTime, endTime, store, duration);
 	dbConn.query(sql, null, (error, result) => {
@@ -100,21 +101,16 @@ const getPurchaseOrdersRevenueQty = (req, res) => {
 	})
 }
 const getTotalData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
 	const sql = getSqlForTotalData(startTime, endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		const preSql = getSqlForTotalData(preStartTime, preEndTime, store);
-		dbConn.query(preSql, null, (_error, _result) => {
+		const _sql = getSqlForTotalData(_startTime, _endTime, store);
+		dbConn.query(_sql, null, (_error, _result) => {
 			if (_error){
 				throw _error;
 			}
@@ -130,13 +126,9 @@ const getTotalData = (req, res) => {
  * Category: Products
  ******************************************/
 const getNumberOfNewProducts = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForNumberOfNewProducts(startTime, endTime, preStartTime, preEndTime, store);
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForNumberOfNewProducts(startTime, endTime, _startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -148,15 +140,10 @@ const getNumberOfNewProducts = (req, res) => {
 	})
 }
 const getBestSellingProductsData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-
-	const sql = getSqlForBestSellingProductsData(startTime, endTime, preStartTime, preEndTime, store)
+	const sql = getSqlForBestSellingProductsData(startTime, endTime, _startTime, _endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -169,13 +156,9 @@ const getBestSellingProductsData = (req, res) => {
  * Category: Purchases
  ******************************************/
 const getMostFrequentSuppliers = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForMostFrequentSuppliers(startTime, endTime, preStartTime, preEndTime, store)
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForMostFrequentSuppliers(startTime, endTime, _startTime, _endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -185,13 +168,9 @@ const getMostFrequentSuppliers = (req, res) => {
 	})
 }
 const getMostPurchasedSuppliers = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForMostPurchasedSuppliers(startTime, endTime, preStartTime, preEndTime, store);
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForMostPurchasedSuppliers(startTime, endTime, _startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -200,9 +179,8 @@ const getMostPurchasedSuppliers = (req, res) => {
 	})
 }
 const getPurchaseData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const sql = getSqlForPurchaseData(startTime, endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
@@ -216,13 +194,9 @@ const getPurchaseData = (req, res) => {
  * Category: Clients
  ******************************************/
 const getNumberOfNewClients = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForNumberOfNewClients(startTime, endTime, preStartTime, preEndTime, store)
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForNumberOfNewClients(startTime, endTime, _startTime, _endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -234,13 +208,9 @@ const getNumberOfNewClients = (req, res) => {
 	})
 }
 const getMostSpentClientsData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForMostSpentClientsData(startTime, endTime, preStartTime, preEndTime, store);
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForMostSpentClientsData(startTime, endTime, _startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -251,14 +221,10 @@ const getMostSpentClientsData = (req, res) => {
 }
 
 const getRepeatedCustomerRate = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const sql = getSqlForRepeatedCustomerRate(startTime, endTime, store);
-	const _sql = getSqlForRepeatedCustomerRate(preStartTime, preEndTime, store);
+	const _sql = getSqlForRepeatedCustomerRate(_startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
@@ -358,12 +324,8 @@ function getTotalLossesWithoutRma(startTime, endTime, store){
 }
 
 const getInventoryLossesData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
 	const kind = req.query.kind
 	/***
@@ -372,7 +334,7 @@ const getInventoryLossesData = (req, res) => {
 
 	if (kind === 'totalRma'){
 		getTotalRma(startTime, endTime, store).then((response) => {
-			getTotalRma(preStartTime, preEndTime, store).then((_response) => {
+			getTotalRma(_startTime, _endTime, store).then((_response) => {
 				res && res.send({
 					current: response,
 					prev: _response
@@ -382,7 +344,7 @@ const getInventoryLossesData = (req, res) => {
 	}
 	if (kind === 'lostRma'){
 		getLostRma(startTime, endTime, store).then((response) => {
-			getLostRma(preStartTime, preEndTime, store).then((_response) => {
+			getLostRma(_startTime, _endTime, store).then((_response) => {
 				res && res.send({
 					current: response,
 					prev: _response
@@ -392,7 +354,7 @@ const getInventoryLossesData = (req, res) => {
 	}
 	if (kind === 'totalLossesWithRma'){
 		getTotalLossesWithRma(startTime, endTime, store).then((response) => {
-			getTotalLossesWithRma(preStartTime, preEndTime, store).then((_response) => {
+			getTotalLossesWithRma(_startTime, _endTime, store).then((_response) => {
 				res && res.send({
 					current: response,
 					prev: _response
@@ -402,7 +364,7 @@ const getInventoryLossesData = (req, res) => {
 	}
 	if (kind === 'totalLossesWithoutRma'){
 		getTotalLossesWithoutRma(startTime, endTime, store).then((response) => {
-			getTotalLossesWithoutRma(preStartTime, preEndTime, store).then((_response) => {
+			getTotalLossesWithoutRma(_startTime, _endTime, store).then((_response) => {
 				res && res.send({
 					current: response,
 					prev: _response
@@ -413,9 +375,9 @@ const getInventoryLossesData = (req, res) => {
 
 	if (kind === 'totalLosses'){
 		getLostRma(startTime, endTime, store).then((lostRma) => {
-			getLostRma(preStartTime, preEndTime, store).then((_lostRma) => {
+			getLostRma(_startTime, _endTime, store).then((_lostRma) => {
 				getTotalLossesWithoutRma(startTime, endTime, store).then((withOut) => {
-					getTotalLossesWithoutRma(preStartTime, preEndTime, store).then((_withOut) => {
+					getTotalLossesWithoutRma(_startTime, _endTime, store).then((_withOut) => {
 						res && res.send({
 							current: parseFloat(lostRma) + parseFloat(withOut),
 							prev: parseFloat(_lostRma) + parseFloat(_withOut)
@@ -432,25 +394,21 @@ const getInventoryLossesData = (req, res) => {
  * Category: Sell my phone
  ******************************************/
 const getSellPhoneData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const sql = getSqlForSellPhoneData(startTime, endTime);
-	const preSql = getSqlForSellPhoneData(preStartTime, preEndTime)
+	const _sql = getSqlForSellPhoneData(_startTime, _endTime)
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		dbConn.query(preSql, null, (preError, preResult) => {
-			if (preError){
-				throw preError;
+		dbConn.query(_sql, null, (_error, _result) => {
+			if (_error){
+				throw _error;
 			}
 			res && res.send({
 				current: result[0],
-				prev: preResult[0]
+				prev: _result[0]
 			});
 		})
 	})
@@ -460,25 +418,21 @@ const getSellPhoneData = (req, res) => {
  * Category: SOS
  ******************************************/
 const getSosData = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const store = req.query.store;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const sql = getSqlForSosData(startTime, endTime, store);
-	const preSql = getSqlForSosData(preStartTime, preEndTime, store)
+	const _sql = getSqlForSosData(_startTime, _endTime, store)
 	dbConn.query(sql, null, (error, result) => {
 		if (error) {
 			throw error;
 		}
-		dbConn.query(preSql, null, (preError, preResult) => {
-			if (preError) {
-				throw preError;
+		dbConn.query(_sql, null, (_error, _result) => {
+			if (_error) {
+				throw _error;
 			}
 			res && res.send({
 				current: result[0],
-				prev: preResult[0]
+				prev: _result[0]
 			})
 		})
 	})
@@ -488,25 +442,22 @@ const getSosData = (req, res) => {
  * Category: Customer Satisfy
  ******************************************/
 const getCustomerEvaluation = (req, res) => {
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 	const sql = `SELECT current.count AS current, prev.count AS prev, current.rating ` +
 		`FROM (` +
 			`SELECT COUNT(id) AS count, star_rating AS rating ` +
 			`FROM tbl_contacts ` +
-			`WHERE created_date > '${startTime}' ` +
-				`AND created_date < '${endTime}' ` +
+			`WHERE created_date >= '${startTime}' ` +
+				`AND created_date <= '${endTime}' ` +
 				`AND star_rating != 'null' ` +
 			`GROUP BY star_rating` +
 		`) current ` +
 		`LEFT JOIN (` +
 			`SELECT COUNT(id) AS count, star_rating AS rating ` +
 			`FROM tbl_contacts ` +
-			`WHERE created_date > '${preStartTime}' ` +
-				`AND created_date < '${preEndTime}' ` +
+			`WHERE created_date >= '${_startTime}' ` +
+				`AND created_date <= '${_endTime}' ` +
 				`AND star_rating != 'null' ` +
 			`GROUP BY star_rating` +
 		`) prev ON current.rating = prev.rating;`
@@ -522,71 +473,58 @@ const getCustomerEvaluation = (req, res) => {
  * Category: Repairs
  ******************************************/
 const getRepairData = (req, res) => {
-	const store = req.query.store;
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
 	const sql = getSqlForRepairData(startTime, endTime, store);
-	const preSql = getSqlForRepairData(preStartTime, preEndTime, store);
+	const _sql = getSqlForRepairData(_startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		dbConn.query(preSql, null, (preError, preResult) => {
-			if (preError){
-				throw preError;
+		dbConn.query(_sql, null, (_error, _result) => {
+			if (_error){
+				throw _error;
 			}
 			res && res.send({
 				current: result[0],
-				prev: preResult[0]
+				prev: _result[0]
 			})
 		})
 	})
 }
 
 const getRepairType = (req, res) => {
-	const store = req.query.store;
-	const startTime = req.query.startTime;
-	const endTime= req.query.endTime;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
 	const sql =  getSqlForRepairType(startTime, endTime, store);
-	const preSql = getSqlForRepairType(preStartTime, preEndTime, store);
+	const _sql = getSqlForRepairType(_startTime, _endTime, store);
 
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
 		}
-		dbConn.query(preSql, null, (preError, preResult) => {
-			if (preError){
-				throw preError;
+		dbConn.query(_sql, null, (_error, _result) => {
+			if (_error){
+				throw _error;
 			}
 			res && res.send({
 				repair: result[0]['repair'],
 				warranty: result[0]['warranty'],
 				sos: result[0]['sos'],
-				_repair: preResult[0]['repair'],
-				_warranty: preResult[0]['warranty'],
-				_sos: preResult[0]['sos'],
+				_repair: _result[0]['repair'],
+				_warranty: _result[0]['warranty'],
+				_sos: _result[0]['sos'],
 			})
 		})
 	})
 }
 
 const getMostInteractionData = (req, res) => {
-	const store = req.query.store;
-	const startTime = req.query.startTime;
-	const endTime = req.query.endTime;
-	const preDuration = getPreDuration(startTime, endTime);
-	const preStartTime = preDuration.startTime;
-	const preEndTime = preDuration.endTime;
-	const sql = getSqlForMostInteractionData(startTime, endTime, preStartTime, preEndTime, store);
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlForMostInteractionData(startTime, endTime, _startTime, _endTime, store);
 	dbConn.query(sql, null, (error, result) => {
 		if (error){
 			throw error;
