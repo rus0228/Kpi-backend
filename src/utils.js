@@ -657,7 +657,7 @@ const getSqlForRepairType = (startTime, endTime, store) => {
 			`${storeWhere}) AS warranty, ` +
 		`(SELECT COUNT(id) ` +
 		`FROM tbl_repair ` +
-		`WHERE type = 2 ` +
+		`WHERE type = 3 ` +
 			`AND created_date >= '${startTime}' ` +
 			`AND created_date <= '${endTime}' ` +
 			`${storeWhere}) AS sos`;
