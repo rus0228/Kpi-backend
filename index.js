@@ -5,7 +5,7 @@ const http = require('http');
 const cors = require('cors');
 const {
 	getCurrentUser,
-
+	getFakeAnalysisChartData,
 	getSalesRevenueProfitQty,
 	getRepairsRevenueProfitQty,
 	getReturnsRevenueProfitQty,
@@ -32,7 +32,7 @@ let app = express();
 app.use(express.static(path.join(__dirname, 'dist')));
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
-
+app.get('/api/fake_analysis_chart_data', getFakeAnalysisChartData);
 app.get('/api/currentUser', getCurrentUser);
 app.get('/api/getSalesRevenueProfitQty', getSalesRevenueProfitQty);
 app.get('/api/getRepairsRevenueProfitQty', getRepairsRevenueProfitQty);
@@ -65,6 +65,6 @@ app.get('/api/getMostPurchasedSuppliers', getMostPurchasedSuppliers);
 app.get('/api/getPurchaseData', getPurchaseData);
 
 const httpServer = http.createServer(app);
-httpServer.listen(3000, function () {
-	console.log('kpi backend is working on port 3000.');
+httpServer.listen(80, function () {
+	console.log('KPI...');
 });

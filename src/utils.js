@@ -556,6 +556,11 @@ const getSqlForSellPhoneData = (startTime, endTime) => {
 		`(SELECT COUNT(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
 			`WHERE created_date >= '${startTime}' ` +
+				`AND created_date <= '${endTime}' ` +
+				`AND status = '9') AS cancelledOrders, ` +
+		`(SELECT COUNT(id) ` +
+			`FROM tbl_sellmyphone_sold ` +
+			`WHERE created_date >= '${startTime}' ` +
 				`AND created_date <= '${endTime}') AS receivedOrders, ` +
 		`(SELECT COUNT(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
@@ -636,7 +641,12 @@ const getSqlForRepairData = (startTime, endTime, store) => {
 		`FROM tbl_repair ` +
 		`WHERE created_date >= '${startTime}' ` +
 			`AND created_date <= '${endTime}' ` +
-			`${storeWhere}) AS averageValue`;
+			`${storeWhere}) AS averageValue, ` +
+		`(SELECT SUM(total_euro) ` +
+		`FROM tbl_repair ` +
+		`WHERE created_date >= '${startTime}' ` +
+			`AND created_date <= '${endTime}' ` +
+			`${storeWhere}) AS totalValue`;
 	return query;
 }
 

@@ -28,8 +28,13 @@ const {
 } = require('./utils')
 
 /******************************************
- * Demo User
+ * Demo User&FakeData
  ******************************************/
+const getFakeAnalysisChartData = (req, res) => {
+	res.send({
+		data: {}
+	})
+}
 const getCurrentUser = (req, res) => {
 	res.send({
 		success: true,
@@ -38,10 +43,51 @@ const getCurrentUser = (req, res) => {
 			avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
 			userid: '00000001',
 			email: 'antdesign@alipay.com',
-			signature: '',
-			title: '',
-			group: '',
+			signature: '海纳百川，有容乃大',
+			title: '交互专家',
+			group: '蚂蚁金服－某某某事业群－某某平台部－某某技术部－UED',
+			tags: [
+				{
+					key: '0',
+					label: '很有想法的',
+				},
+				{
+					key: '1',
+					label: '专注设计',
+				},
+				{
+					key: '2',
+					label: '辣~',
+				},
+				{
+					key: '3',
+					label: '大长腿',
+				},
+				{
+					key: '4',
+					label: '川妹子',
+				},
+				{
+					key: '5',
+					label: '海纳百川',
+				},
+			],
+			notifyCount: 12,
+			unreadCount: 11,
+			country: 'China',
 			access: 'admin',
+			geographic: {
+				province: {
+					label: '浙江省',
+					key: '330000',
+				},
+				city: {
+					label: '杭州市',
+					key: '330100',
+				},
+			},
+			address: '西湖区工专路 77 号',
+			phone: '0752-268888888',
 		},
 	});
 }
@@ -268,6 +314,42 @@ const getRepeatedCustomerRate = (req, res) => {
 /******************************************
  * Category: Inventory losses
  ******************************************/
+function getProcessingTotalValue(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(total) AS processingTotalValue ` +
+			`FROM tbl_rma_group ` +
+			`WHERE created_date >= '${startTime}' ` +
+			`AND created_date <= '${endTime}' ` +
+			`AND status = '1' ` +
+			`${storeWhere}`
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error);
+			}
+			resolve(parseFloat(result[0]['processingTotalValue']));
+		})
+	})
+}
+
+function getShippedTotalValue(startTime, endTime, store){
+	return new Promise((resolve, reject) => {
+		const storeWhere = store !== '0' ? `AND store_id = '${store}' ` : ``;
+		const sql = `SELECT SUM(total) AS shippedTotalValue ` +
+			`FROM tbl_rma_group ` +
+			`WHERE created_date >= '${startTime}' ` +
+			`AND created_date <= '${endTime}' ` +
+			`AND status = '2' ` +
+			`${storeWhere}`
+		dbConn.query(sql, null, (error, result) => {
+			if (error){
+				reject(error);
+			}
+			resolve(parseFloat(result[0]['shippedTotalValue']));
+		})
+	})
+}
+
 function getTotalRma(startTime, endTime, store){
 	return new Promise((resolve, reject) => {
 		const storeWhere = store !== '0' ? `AND store_id = '${store}' ` : ``;
@@ -344,11 +426,33 @@ function getTotalLossesWithoutRma(startTime, endTime, store){
 const getInventoryLossesData = (req, res) => {
 	const commonParams = getCommonParams(req);
 	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
-
 	const kind = req.query.kind
 	/***
 	 * We will send kind parameter for kind, which means inventory sub tab value
 	 ***/
+	if (kind === 'processing'){
+		getProcessingTotalValue(startTime, endTime, store).then((response) => {
+			getProcessingTotalValue(_startTime, _endTime, store).then((_response) => {
+
+				console.log(_response, response);
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
+
+	if (kind === 'shipped'){
+		getShippedTotalValue(startTime, endTime, store).then((response) => {
+			getShippedTotalValue(_startTime, _endTime, store).then((_response) => {
+				res && res.send({
+					current: response,
+					prev: _response
+				})
+			});
+		});
+	}
 
 	if (kind === 'totalRma'){
 		getTotalRma(startTime, endTime, store).then((response) => {
@@ -554,6 +658,8 @@ const getMostInteractionData = (req, res) => {
 
 module.exports = {
 	getCurrentUser,
+	getFakeAnalysisChartData,
+
 	getSalesRevenueProfitQty,
 	getRepairsRevenueProfitQty,
 	getReturnsRevenueProfitQty,
