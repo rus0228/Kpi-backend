@@ -28,6 +28,24 @@ const {
 } = require('./utils')
 
 /******************************************
+ * Demo User
+ ******************************************/
+const getCurrentUser = (req, res) => {
+	res.send({
+		success: true,
+		data: {
+			name: 'Pedro',
+			avatar: 'https://gw.alipayobjects.com/zos/antfincdn/XAosXuNZyF/BiazfanxmamNRoxxVxka.png',
+			userid: '00000001',
+			email: 'antdesign@alipay.com',
+			signature: '',
+			title: '',
+			group: '',
+			access: 'admin',
+		},
+	});
+}
+/******************************************
  * Get common parameters
  ******************************************/
 const getCommonParams = (e) => {
@@ -535,6 +553,7 @@ const getMostInteractionData = (req, res) => {
 }
 
 module.exports = {
+	getCurrentUser,
 	getSalesRevenueProfitQty,
 	getRepairsRevenueProfitQty,
 	getReturnsRevenueProfitQty,

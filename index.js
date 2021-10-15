@@ -1,42 +1,39 @@
 const express = require('express');
+const path = require('path');
+const bodyParser = require('body-parser');
+const http = require('http');
+const cors = require('cors');
 const {
+	getCurrentUser,
+
 	getSalesRevenueProfitQty,
 	getRepairsRevenueProfitQty,
 	getReturnsRevenueProfitQty,
 	getPurchaseOrdersRevenueQty,
 	getTotalData,
-
 	getNumberOfNewProducts,
 	getBestSellingProductsData,
-
 	getNumberOfNewClients,
 	getMostSpentClientsData,
 	getRepeatedCustomerRate,
-
 	getInventoryLossesData,
-
 	getSellPhoneData,
-
 	getRepairData,
 	getRepairType,
 	getMostInteractionData,
-
 	getCustomerEvaluation,
-
 	getSosData,
-
 	getMostFrequentSuppliers,
 	getMostPurchasedSuppliers,
 	getPurchaseData,
 } = require('./src/main');
-const SocketIO = require('socket.io');
-const http = require('http');
-const cors = require('cors');
 
 let app = express();
+app.use(express.static(path.join(__dirname, 'dist')));
+app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 
-
+app.get('/api/currentUser', getCurrentUser);
 app.get('/api/getSalesRevenueProfitQty', getSalesRevenueProfitQty);
 app.get('/api/getRepairsRevenueProfitQty', getRepairsRevenueProfitQty);
 app.get('/api/getReturnsRevenueProfitQty', getReturnsRevenueProfitQty);
