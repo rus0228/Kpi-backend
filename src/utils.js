@@ -99,7 +99,7 @@ const getSqlForReturnsRevenueProfitQty = (startTime, endTime, store, duration) =
 		`INNER JOIN tbl_returns tr ON trp.return_id = tr.id ` +
 		`WHERE trp.created_date >= '${startTime}' ` +
 			`AND trp.created_date <= '${endTime}' ` +
-			`AND tr.is_deleted = 0 ` +
+			`AND tr.is_deleted = 0 ` + 
 			`${storeWhere}` +
 		`GROUP BY ${timeGroup} ` +
 		`ORDER BY trp.created_date ASC;`;
@@ -484,15 +484,15 @@ const getSqlForMostSpentClientsData = (startTime, endTime, preStartTime, preEndT
 			`SELECT t.client_id, SUM(t.spent) AS spent ` +
 			`FROM (` +
 				`SELECT client_id, total_sales_euro AS spent, created_date, store_id ` +
-				`WHERE status != 'delete'`+
+				/* `WHERE status != 'delete'`+ */
 				`FROM tbl_sales ` +
 			`UNION ` +
 				`SELECT client_id, total_euro AS spent, created_date, store_id ` +
-				`WHERE status = '5' `+
+				/* `WHERE status = '5' `+ */
 				`FROM tbl_repair ` +
 			`UNION ` +
 				`SELECT client_id, total_euro AS spent, created_date, store_id ` +
-				`WHERE status != 'delete'`+
+				/* `WHERE status != 'delete'`+ */
 				`FROM tbl_returns ` +
 			`) t ` +
 			`WHERE t.created_date >= '${startTime}' ` +
