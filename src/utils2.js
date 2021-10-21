@@ -309,7 +309,7 @@ const getSqlForBestSellingProductsData = (startTime, endTime, preStartTime, preE
 			`FROM tbl_sales_product tsp ` +
 			`INNER JOIN tbl_sales ts ON tsp.sale_id = ts.id ` +
 			`WHERE tsp.created_date >= '${startTime}' ` +
-				`AND tsp.created_date <= '${endTime}' ` +				
+				`AND tsp.created_date <= '${endTime}' ` +
 				/* `AND ts.is_deleted = 0 ` + // alterado */
 				`AND ts.status != "delete" ` +
 				`${storeWhere} ` +
@@ -327,7 +327,7 @@ const getSqlForBestSellingProductsData = (startTime, endTime, preStartTime, preE
 				`AND ts.status != "delete" ` +
 				`${storeWhere} ` +
 			`GROUP BY pId ` +
-			`) prevQty ON curQty.pId = prevQty.pId; `; // top 5 produtos mais vendidos
+		`) prevQty ON curQty.pId = prevQty.pId; `; // top 5 produtos mais vendidos
 
 	const revenueQuery =
 		`SELECT curRevenue.pId AS cur_pId, prevRevenue.pRevenue AS prev_pRevenue, curRevenue.pRevenue AS cur_pRevenue, curRevenue.pName AS cur_pName ` +
@@ -349,12 +349,12 @@ const getSqlForBestSellingProductsData = (startTime, endTime, preStartTime, preE
 			`FROM tbl_sales_product tsp ` +
 			`INNER JOIN tbl_sales ts ON tsp.sale_id = ts.id ` +
 			`WHERE tsp.created_date >= '${preStartTime}' ` +
-			`AND tsp.created_date <= '${preEndTime}' ` +
-			/* `AND ts.is_deleted = 0 ` + // alterado */
-			`AND ts.status != "delete" ` +
-			`${storeWhere} ` +
+				`AND tsp.created_date <= '${preEndTime}' ` +
+				/* `AND ts.is_deleted = 0 ` + // alterado */
+				`AND ts.status != "delete" ` +
+				`${storeWhere} ` +
 			`GROUP BY pId ` +
-			`) prevRevenue ON curRevenue.pId = prevRevenue.pId; `; // top 5 produtos com maior volume de vendas
+		`) prevRevenue ON curRevenue.pId = prevRevenue.pId; `; // top 5 produtos com maior volume de vendas
 
 	const profitQuery =
 		`SELECT curProfit.pId AS cur_pId, prevProfit.pProfit AS prev_pProfit, curProfit.pProfit AS cur_pProfit, curProfit.pName AS cur_pName ` +
@@ -372,7 +372,7 @@ const getSqlForBestSellingProductsData = (startTime, endTime, preStartTime, preE
 			`LIMIT 5` +
 		`) curProfit ` +
 		`LEFT JOIN (` +
-		`SELECT tsp.product_id AS pId, SUM(tsp.subtotal - (tsp.cost_price * tsp.quantity)) AS pProfit ` +
+			`SELECT tsp.product_id AS pId, SUM(tsp.subtotal - (tsp.cost_price * tsp.quantity)) AS pProfit ` +
 			`FROM tbl_sales_product tsp ` +
 			`INNER JOIN tbl_sales ts ON tsp.sale_id = ts.id ` +
 			`WHERE tsp.created_date >= '${preStartTime}' ` +
@@ -381,8 +381,8 @@ const getSqlForBestSellingProductsData = (startTime, endTime, preStartTime, preE
 				`AND ts.status != "delete" ` +
 				`${storeWhere} ` +
 			`GROUP BY pId ` +
-			`) prevProfit ON curProfit.pId = prevProfit.pId; `; // top 5 produtos mais lucrativos
-	return qtyQuery + revenueQuery + profitQuery;
+		`) prevProfit ON curProfit.pId = prevProfit.pId; `; // top 5 produtos mais lucrativos
+	return qtyQuery + revenueQuery + profitQuery; 
 }
 
 const getSqlForMostFrequentSuppliers = (startTime, endTime, preStartTime, preEndTime, store) => {
@@ -410,7 +410,7 @@ const getSqlForMostFrequentSuppliers = (startTime, endTime, preStartTime, preEnd
 				`AND tp.created_date <= '${preEndTime}' ` +
 				`${storeWhere}` +
 			`GROUP BY tp.supplier_id ` +
-			`) prev ON current.name = prev.name`; // top 5 produtos fornecedores com maior qtd
+		`) prev ON current.name = prev.name`; // top 5 produtos fornecedores com maior qtd
 	return query;
 }
 
@@ -439,7 +439,7 @@ const getSqlForMostPurchasedSuppliers = (startTime, endTime, preStartTime, preEn
 				`AND tp.created_date <= '${preEndTime}' ` +
 				`${storeWhere}` +
 			`GROUP BY tp.supplier_id ` +
-			`) prev ON current.name = prev.name`; // top 5 produtos fornecedores com maior valor
+		`) prev ON current.name = prev.name`; // top 5 produtos fornecedores com maior valor
 
 	return query;
 }
@@ -464,16 +464,18 @@ const getSqlForNumberOfNewClients = (startTime, endTime, preStartTime, preEndTim
 	const current =
 		`SELECT COUNT(tc.id) AS count ` +
 		`FROM tbl_client tc ` +
+		`INNER JOIN tbl_client_orders tco ON tc.id = tco.client_id ` +
 		`WHERE tc.created_date >= '${startTime}' ` +
 			`AND tc.created_date <= '${endTime}' ` +
 			`${storeWhere};`;
 	const prev =
 		`SELECT COUNT(tc.id) AS count ` +
 		`FROM tbl_client tc ` +
+		`INNER JOIN tbl_client_orders tco ON tc.id = tco.client_id ` +
 		`WHERE tc.created_date >= '${preStartTime}' ` +
 			`AND tc.created_date <= '${preEndTime}' ` +
 			`${storeWhere};`;
-			return current + prev; // errado, apenas verificar tbl_clients e data adicionado
+	return current + prev; // errado, apenas verificar tbl_clients e data adicionado
 }
 
 const getSqlForMostSpentClientsData = (startTime, endTime, preStartTime, preEndTime, store) => {
@@ -484,15 +486,12 @@ const getSqlForMostSpentClientsData = (startTime, endTime, preStartTime, preEndT
 			`SELECT t.client_id, SUM(t.spent) AS spent ` +
 			`FROM (` +
 				`SELECT client_id, total_sales_euro AS spent, created_date, store_id ` +
-				`WHERE status != 'delete'`+
 				`FROM tbl_sales ` +
 			`UNION ` +
 				`SELECT client_id, total_euro AS spent, created_date, store_id ` +
-				`WHERE status = '5' `+
 				`FROM tbl_repair ` +
 			`UNION ` +
 				`SELECT client_id, total_euro AS spent, created_date, store_id ` +
-				`WHERE status != 'delete'`+
 				`FROM tbl_returns ` +
 			`) t ` +
 			`WHERE t.created_date >= '${startTime}' ` +
@@ -520,7 +519,7 @@ const getSqlForMostSpentClientsData = (startTime, endTime, preStartTime, preEndT
 			`GROUP BY t.client_id ` +
 		`) t2 ON t1.client_id = t2.client_id ` +
 		`LEFT JOIN tbl_client tc ON t1.client_id = tc.id `
-		return query; // clientes com mais valor gasto nas vendas, reps e notas de credito. falta colocar is_deleted!!!
+	return query; // clientes com mais valor gasto nas vendas, reps e notas de credito. falta colocar is_deleted!!!
 }
 
 const getSqlForRepeatedCustomerRate = (startTime, endTime, store) => {
@@ -565,19 +564,14 @@ const getSqlForRepeatedCustomerRate = (startTime, endTime, store) => {
 		`) t ` +
 		`WHERE t.counted > 1; `
 
-		return query // percentagem de clientes novos VS clientes recorrentes - está errado
+	return query // percentagem de clientes novos VS clientes recorrentes - está errado
 }
 const getSqlForSellPhoneData = (startTime, endTime) => {
 	const query = `SELECT ` +
 		`(SELECT COUNT(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
 			`WHERE created_date >= '${startTime}' ` +
-				`AND created_date <= '${endTime}' ` +
-				`AND status = '9') AS cancelledOrders, ` +
-		`(SELECT COUNT(id) ` +
-			`FROM tbl_sellmyphone_sold ` +
-			`WHERE created_date >= '${startTime}' ` +
-				`AND created_date <= '${endTime}') AS receivedOrders, ` +
+				`AND created_date <= '${endTime}') AS receivedOrders, ` + // quantidade de pedidos recebidos
 		`(SELECT COUNT(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
 			`WHERE created_date >= '${startTime}' ` +
@@ -591,7 +585,7 @@ const getSqlForSellPhoneData = (startTime, endTime) => {
 		`(SELECT SUM(admin_price) / COUNT(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
 			`WHERE created_date >= '${startTime}' ` +
-			`AND created_date <= '${endTime}') AS averageAmount, ` + // média de valor pago
+				`AND created_date <= '${endTime}') AS averageAmount, ` + // média de valor pago
 		`(SELECT SUM(UNIX_TIMESTAMP(modified_date) - UNIX_TIMESTAMP(created_date)) / count(id) ` +
 			`FROM tbl_sellmyphone_sold ` +
 			`WHERE created_date >= '${startTime}' ` +
@@ -661,11 +655,6 @@ const getSqlForRepairData = (startTime, endTime, store) => {
 			`AND created_date <= '${endTime}' ` +
 			`AND status >= 4 OR status <= 7 ` + // estados: 4 reparado, 7 disponivel, 5 entregue, 6 sem reparação (apenas reparações concluidas)
 			`${storeWhere}) AS averageValue`; // valor médio de reparação
-		`(SELECT SUM(total_euro) ` +
-		`FROM tbl_repair ` +
-		`WHERE created_date >= '${startTime}' ` +
-			`AND created_date <= '${endTime}' ` +
-			`${storeWhere}) AS totalValue`;
 	return query;
 }
 
@@ -714,7 +703,7 @@ const getSqlForMostInteractionData = (startTime, endTime, preStartTime, preEndTi
 				`AND created_date <= '${preEndTime}' ` +
 				`${storeWhere}` +
 			`GROUP BY user_id ` +
-			`) prev ON current.uid = prev.uid`; // quantidade de interações
+		`) prev ON current.uid = prev.uid`; // quantidade de interações
 
 	return query;
 }
