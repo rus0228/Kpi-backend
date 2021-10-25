@@ -65,6 +65,6 @@ app.get('/api/getMostPurchasedSuppliers', getMostPurchasedSuppliers);
 app.get('/api/getPurchaseData', getPurchaseData);
 
 const httpServer = http.createServer(app);
-httpServer.listen(80, function () {
+httpServer.listen(3000, function () {
 	console.log('KPI...');
 });
