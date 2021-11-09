@@ -29,8 +29,6 @@ const {
 } = require('./src/main');
 
 let app = express();
-app.use(express.static(path.join(__dirname, 'dist')));
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cors());
 app.get('/api/fake_analysis_chart_data', getFakeAnalysisChartData);
 app.get('/api/currentUser', getCurrentUser);
@@ -66,5 +64,5 @@ app.get('/api/getPurchaseData', getPurchaseData);
 
 const httpServer = http.createServer(app);
 httpServer.listen(3000, function () {
-	console.log('KPI...');
+	console.log('KPI ...');
 });
