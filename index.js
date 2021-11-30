@@ -21,6 +21,7 @@ const {
 	getRepairData,
 	getRepairType,
 	getMostInteractionData,
+	getRepairsMostInteractionData,
 	getCustomerEvaluation,
 	getSosData,
 	getMostFrequentSuppliers,
@@ -29,6 +30,8 @@ const {
 } = require('./src/main');
 
 let app = express();
+/* app.use(express.static(path.join(__dirname, 'dist')));
+app.use(bodyParser.urlencoded({ extended: false })); */
 app.use(cors());
 app.get('/api/fake_analysis_chart_data', getFakeAnalysisChartData);
 app.get('/api/currentUser', getCurrentUser);
@@ -55,6 +58,8 @@ app.get('/api/getSosData', getSosData);
 app.get('/api/getRepairData', getRepairData);
 app.get('/api/getRepairType', getRepairType);
 app.get('/api/getMostInteractionData', getMostInteractionData);
+app.get('/api/getRepairsMostInteractionData', getRepairsMostInteractionData);
+
 
 app.get('/api/getCustomerEvaluation', getCustomerEvaluation);
 

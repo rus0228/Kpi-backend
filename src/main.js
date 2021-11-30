@@ -6,6 +6,7 @@ const {
 	getSqlForRepairsRevenueProfitQty,
 	getSqlForReturnsRevenueProfitQty,
 	getSqlForPurchaseOrdersRevenueQty,
+	getSqlForMostInteractionData,
 	getSqlForTotalData,
 
 	getSqlForNumberOfNewProducts,
@@ -24,7 +25,7 @@ const {
 
 	getSqlForRepairData,
 	getSqlForRepairType,
-	getSqlForMostInteractionData
+	getSqlRepairForMostInteractionData
 } = require('./utils')
 
 /******************************************
@@ -208,7 +209,10 @@ const getBestSellingProductsData = (req, res) => {
 	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
 
 	const sql = getSqlForBestSellingProductsData(startTime, endTime, _startTime, _endTime, store)
+	
+
 	dbConn.query(sql, null, (error, result) => {
+		console.log(result);
 		if (error){
 			throw error;
 		}
@@ -656,6 +660,19 @@ const getMostInteractionData = (req, res) => {
 	})
 }
 
+const getRepairsMostInteractionData = (req, res) => {
+	const commonParams = getCommonParams(req);
+	const {startTime, endTime, _startTime, _endTime, store} = commonParams;
+	const sql = getSqlRepairForMostInteractionData(startTime, endTime, _startTime, _endTime, store);
+	dbConn.query(sql, null, (error, result) => {
+		if (error){
+			throw error;
+		}
+		console.log(result);
+		res.send(result);
+	})
+}
+
 module.exports = {
 	getCurrentUser,
 	getFakeAnalysisChartData,
@@ -665,6 +682,7 @@ module.exports = {
 	getReturnsRevenueProfitQty,
 	getPurchaseOrdersRevenueQty,
 	getTotalData,
+	getMostInteractionData,
 
 	getNumberOfNewProducts,
 	getBestSellingProductsData,
@@ -679,7 +697,7 @@ module.exports = {
 
 	getRepairData,
 	getRepairType,
-	getMostInteractionData,
+	getRepairsMostInteractionData,
 	getCustomerEvaluation,
 
 	getMostFrequentSuppliers,
